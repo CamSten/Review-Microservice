@@ -2,6 +2,7 @@ package com.example.reviewservice.service;
 
 import com.example.reviewservice.model.*;
 import com.example.reviewservice.repository.ReviewRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -12,6 +13,10 @@ import java.util.*;
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final RestTemplate restTemplate;
+    @Value("${booking.service.url}")
+    private String bookingServiceUrl;
+    @Value("${customer.service.url}")
+    private String customerServiceUrl;
 
     public ReviewService(ReviewRepository reviewRepository) {
         this.reviewRepository = reviewRepository;
@@ -21,7 +26,7 @@ public class ReviewService {
     public ReviewCustomerDTO fetchReviewCustomerDTO(Long customerId){
         try {
             ResponseEntity<ReviewCustomerDTO> customerResponse = restTemplate.getForEntity(
-                    "http://customer-service:8081/api/customers/review/" + customerId, ReviewCustomerDTO.class);
+                    customerServiceUrl + customerId, ReviewCustomerDTO.class);
             if (!customerResponse.getStatusCode().is2xxSuccessful() || customerResponse.getBody() == null) {
                 return null;
             }
@@ -33,8 +38,8 @@ public class ReviewService {
 
     public ReviewBookingDTO fetchBookingDTO(Long customerId, Long roomId, LocalDate startDate, LocalDate endDate) {
         try {
-            String url = "http://booking-service:8080/bookings/customer/review" + "?customerId=" + customerId +
-                    "&roomId=" + roomId + "&startDate=" + startDate + "&endDate=" + endDate;
+            String url = bookingServiceUrl + "?customerId=" + customerId + "&roomId=" + roomId + "&startDate="
+                    + startDate + "&endDate=" + endDate;
             ResponseEntity<ReviewBookingDTO> bookingResponse = restTemplate.getForEntity(url, ReviewBookingDTO.class);
             if (!bookingResponse.getStatusCode().is2xxSuccessful() || bookingResponse.getBody() == null) {
                 return null;
@@ -88,7 +93,6 @@ public class ReviewService {
         List<ReviewDTO> reviewDTOs = new ArrayList<>();
         double totalRating = 0;
         for (Review r : reviews) {
-            System.out.print("r.id: " + r.getCustomerId());
             ReviewDTO dto = new ReviewDTO();
             dto.setStars(r.getRating());
             dto.setComments(r.getComment());
